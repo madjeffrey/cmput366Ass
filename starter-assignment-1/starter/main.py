@@ -31,9 +31,9 @@ def main():
     Function for testing your A* and Dijkstra's implementation. There is no need to edit this file.
     Run it with a -help option to see the options available. 
     """
-    test_instances = "test-instances/testinstances.txt"
+    test_instances = "test-instances/testinstances.txt" ##got to put back
     
-    gridded_map = Map("dao-map/brc000d.map")
+    gridded_map = Map("dao-map/brc000d.map")   ##got to put back
     dijkstra = Dijkstra(gridded_map)
     astar = AStar(gridded_map)
     
@@ -61,7 +61,7 @@ def main():
         goal = goal_states[i]
     
         time_start = time.time()
-        path, cost, expanded_diskstra = None, None, None # Replace the None, None, None with a call to Dijkstra's algorithm
+        path, cost, expanded_diskstra = dijkstra.djikstra(start, goal)# Replace the None, None, None with a call to Dijkstra's algorithm
         time_end = time.time()
         nodes_expanded_dijkstra.append(expanded_diskstra)
         time_dijkstra.append(time_end - time_start)
@@ -80,7 +80,7 @@ def main():
         goal = goal_states[i]
     
         time_start = time.time()
-        path, cost, expanded_astar = None, None, None # Replace the None, None, None with a call to A*
+        path, cost, expanded_astar = astar.astar(start, goal) # Replace the None, None, None with a call to A*
         time_end = time.time()
 
         nodes_expanded_astar.append(expanded_astar)

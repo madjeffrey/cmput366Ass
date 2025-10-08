@@ -103,31 +103,34 @@ class State:
         """
         self._cost = cost
     
-    def get_h(self, goal:State):
+    def get_h(self, goal):
         xf = goal.get_x()
         yf = goal.get_y()
-        difx = abs(xf-self._x())
+        difx = abs(xf-self._x)
         dify = abs(xf-self._y)
 
         return 1.5* min(difx, dify) + abs(difx - dify)
 
 
-class Djikstra:
+class Dijkstra:
     def __init__(self, gridmap):
         self.__map = gridmap
         self.__open = []
         self.__closed = {}
         self.__numExpanded = 0
 
+    def get_closed_data(self):
+        return self.__closed
 
-    def djikstra(self, start:State, goal:State):
+
+    def djikstra(self, start, goal):
         self.__open.append(start)
         self.__closed[start.state_hash()] = start
         while self.__open:
             curState = heapq.heappop(self.__open)
             self.__numExpanded += 1
             if curState == goal:
-                return self.getPath(goal), goal.get_cost(), self.__numExpanded
+                return self.getPath(self.__closed[goal.state_hash()], start), self.__closed[goal.state_hash()].get_cost(), self.__numExpanded
             children = self.__map.successors(curState)
             for child in children:
                 hashVal = child.state_hash()    
@@ -139,6 +142,7 @@ class Djikstra:
                 # can it happen where the child is poped but then revisited later?, as in was the lowest cost so expanded but then a later 1 came back to it with cheaper -A: no this is not possible and can be proven, it is expected that when a stated is expanded that it holds its optimal cost from the start
                 elif child.get_g() < self.__closed[hashVal].get_cost():
                     # does this work, since the open list holds a reference and not the object, so it would have duplicates of the same position if we just set closed to child
+                    assert self.__closed[hashVal] == child
                     self.__closed[hashVal].set_cost(child.get_g())
                     self.__closed[hashVal].set_g(child.get_g())
                     self.__closed[hashVal].set_parent(curState)
@@ -147,37 +151,36 @@ class Djikstra:
         return None, -1, self.__numExpanded
     
 
-    def getPath(self, end:State):
+    def getPath(self, end, start):
         parent = end
-        pathE2S =  [end]
-        path = []
+        path = [end]
         while True:
             parent = parent.get_parent()
-            if parent == None:
+            if parent == start:
+                path.append(parent)
                 break
-            pathE2S.append(parent)
-
-        while pathE2S:
-            path.append(pathE2S.pop())
-
+            path.append(parent)
+        
+        return path[::-1]
 
 
 
-class Astar:
+
+class AStar:
     def __init__(self, gridmap):
         self.__map = gridmap
         self.__open = []
         self.__closed = {}
         self.__numExpanded = 0
 
-    def astar(self, start:State, goal:State):
+    def astar(self, start, goal):
         self.__open.append(start)
         self.__closed[start.state_hash()] = start
         while self.__open:
             curState = heapq.heappop(self.__open)
             self.__numExpanded += 1
             if curState == goal:
-                return self.getPath(goal), goal.get_cost(), self.__numExpanded
+                return self.getPath(self.__closed[goal.state_hash()],start), self.__closed[goal.state_hash()].get_cost(), self.__numExpanded
             children = self.__map.successors(curState)
             for child in children:
                 hashVal = child.state_hash()    
@@ -187,9 +190,10 @@ class Astar:
                     child.set_parent(curState)
                     heapq.heappush(self.__open, child)
                 # can it happen where the child is poped but then revisited later?, as in was the lowest cost so expanded but then a later 1 came back to it with cheaper -A: no this is not possible and can be proven, it is expected that when a stated is expanded that it holds its optimal cost from the start
-                elif child.get_g() + child.get_h() < self.__closed[hashVal].get_cost():
+                elif child.get_g() + child.get_h(goal) < self.__closed[hashVal].get_cost():
+                    assert self.__closed[hashVal] == child
                     # does this work, since the open list holds a reference and not the object, so it would have duplicates of the same position if we just set closed to child
-                    self.__closed[hashVal].set_cost(child.get_g()+child.get_h()) # update so that it is the heuristic
+                    self.__closed[hashVal].set_cost(child.get_g()+child.get_h(goal)) # update so that it is the heuristic
                     # since these should have the same x and y they have the same h and as such only need to update the g
                     self.__closed[hashVal].set_g(child.get_g())
                     self.__closed[hashVal].set_parent(curState)
@@ -198,15 +202,13 @@ class Astar:
         return None, -1, self.__numExpanded
     
 
-    def getPath(self, end:State):
+    def getPath(self, end, start):
         parent = end
-        pathE2S =  [end]
-        path = []
+        path = [end]
         while True:
             parent = parent.get_parent()
-            if parent == None:
+            if parent == start:
+                path.append(parent)
                 break
-            pathE2S.append(parent)
-
-        while pathE2S:
-            path.append(pathE2S.pop())
+            path.append(parent)
+        return path[::-1]
