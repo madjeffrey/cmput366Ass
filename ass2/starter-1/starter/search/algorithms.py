@@ -143,53 +143,55 @@ class CBSState:
         for i in range(0, self._k):
             cost, path = astar.search(self._starts[i], self._goals[i], self._constraints[i])
             self._cost += cost
-            self._paths.append(path)
+            self._paths[i] = path
     
     def is_solution(self):
         """
         Verifies whether a CBS state is a solution. If it isn't, it returns False and a tuple with 
         the conflicting state and time step; returns True, None otherwise. 
         """
-        longestList = max(self._paths, key=len)
-        for i in len(longestList):
+        longestList = max(self._paths.values(), key=len)
+        for i in range(0,len(longestList)):
+            seen = set()
             for j in range(0, self._k):
-                for k in range(0, self._k):
-                    if k != j and self._paths[j][i] and self._paths[k][i] and self._paths[j][i] == self._paths[k][i]:
-                        return False, (self._paths[j][i], self._paths[j][i].get_g())
-        
+                # make sure the agent has a node at this depth
+                if i < len(self._paths[j]):
+                    # if node is seen before at this depth then it is repeat
+                    if self._paths[j][i] not in seen:
+                        seen.add(self._paths[j][i])
+                        continue
+                    return False, (self._paths[j][i], self._paths[j][i].get_g())
+
         return True, None
     
-    def isSolution(self):
-        """
-        Verifies whether a CBS state is a solution. If it isn't, it returns False and a tuple with 
-        the conflicting state and time step; returns True, None otherwise. 
-        """
-        longestList = max(self._paths, key=len)
-        for i in len(longestList):
-            for j in range(0, self._k):
-                for k in range(0, self._k):
-                    if k != j and self._paths[j][i] and self._paths[k][i] and self._paths[j][i] == self._paths[k][i]:
-                        return False, (self._paths[j][i], self._paths[j][i].get_g()), (k,j)
-        
-        return True, None, (-1,-1)
 
     def successors(self):
         """
         Generates the two children of a CBS state that doesn't represent a solution.
         """
-        valid, state, agents = self.isSolution()
+        valid, state = self.is_solution()
         if not valid:
-            assert agents != (-1,-1), "valid with invalid agents"
+            # get which are in conflict
+            agents = []
+            for i in range(self._k):
+                if state[1] >= len(self._paths[i]):
+                    continue
+                if self._paths[i][state[1]] == state[0]:
+                    agents.append(i)
+                if len(agents) == 2:
+                    break
+            # set the state with constaint on first agent
             c1 = CBSState(self._map, self._starts, self._goals)
             c1._constraints = copy.deepcopy(self._constraints)
             c1.set_constraint(state[0], state[1], agents[0])
+            # set the state with the constraint on second agent
             c2 = CBSState(self._map, self._starts, self._goals)
             c2._constraints = copy.deepcopy(self._constraints)
             c2.set_constraint(state[0], state[1], agents[1])
             return [c1,c2]
         
         # if calling successors on a solution state
-        return None
+        return False
     
     def set_constraint(self, conflict_state, conflict_time, agent):
         """
@@ -204,8 +206,9 @@ class CBSState:
     def __lt__(self, other):
         """
         Less-than operator; used to sort the nodes in the OPEN list
+        ##should we not flip this? then it would max heap sort like we want
         """
-        return self._cost < other._cost
+        return self._cost > other._cost
     
     def get_cost(self):
         """
@@ -213,22 +216,20 @@ class CBSState:
         """
         return self._cost
     
-    def get_paths(self):
-        """
-        Why is this not included?
-        how else are we supposed to return the paths
-        Returns the paths of a state
-        """
-        return self._paths
-    
     def set_cost(self, cost):
         """
         Sets the cost of the state
         """
         self._cost = cost
 
+    def get_paths(self):
+        """
+        do I need this, I don't see how else to get the paths
+        """
+        return self._paths
+
 class CBS():
-    def search(self, start:CBSState):
+    def search(self, start):
         """
         Performs CBS search for the problem defined in start.
         """
@@ -238,11 +239,10 @@ class CBS():
         heapq.heappush(self.OPEN, start)
         while len(self.OPEN) > 0:
             node = heapq.heappop(self.OPEN)
-            solution, state = node.is_solution()
-            if solution:
-                return node.get_cost(), node.get_paths()
-
             children = node.successors()
+            # returns False if is_solution() in successors() returns True
+            if children == False:
+                return node.get_paths(), node.get_cost()
 
             for child in children:
                 child.compute_cost()
@@ -312,5 +312,6 @@ class AStar():
                 if hash_value in self.CLOSED and self.CLOSED[hash_value].get_g() > child.get_g():
                     heapq.heappush(self.OPEN, child)
                     self.CLOSED[hash_value] = child
+
         return -1, None
     
