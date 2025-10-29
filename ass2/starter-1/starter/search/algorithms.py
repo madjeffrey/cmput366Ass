@@ -158,11 +158,14 @@ class CBSState:
             for j in range(0, self._k):
                 # make sure the agent has a node at this depth
                 if i < len(self._paths[j]):
-                    # if node is seen before at this depth then it is repeat
-                    if self._paths[j][i] not in seen:
-                        seen.add(self._paths[j][i])
-                        continue
-                    return False, (self._paths[j][i], self._paths[j][i].get_g())
+                    time = i
+                else:
+                    time = -1
+                # if node is seen before at this depth then it is repeat
+                if self._paths[j][time] not in seen:
+                    seen.add(self._paths[j][time])
+                    continue
+                return False, (self._paths[j][time], self._paths[j][time].get_g())
 
         return True, None
     
@@ -210,7 +213,7 @@ class CBSState:
         Less-than operator; used to sort the nodes in the OPEN list
         ##should we not flip this? then it would max heap sort like we want
         """
-        return self._cost > other._cost
+        return self._cost < other._cost
     
     def get_cost(self):
         """
@@ -248,9 +251,7 @@ class CBS():
 
             for child in children:
                 child.compute_cost()
-                self.OPEN.append(child)
-            
-            heapq.heapify(self.OPEN)
+                heapq.heappush(self.OPEN, child)
 
 class AStar():
 
