@@ -139,6 +139,8 @@ class CBSState:
         """
         Computes the cost of a CBS state. Assumes the sum of the cost of the paths as the objective function.
         """
+        self._cost = 0
+        self._paths = {}
         astar = AStar(self._map)
         for i in range(0, self._k):
             cost, path = astar.search(self._starts[i], self._goals[i], self._constraints[i])
@@ -150,8 +152,8 @@ class CBSState:
         Verifies whether a CBS state is a solution. If it isn't, it returns False and a tuple with 
         the conflicting state and time step; returns True, None otherwise. 
         """
-        longestList = max(self._paths.values(), key=len)
-        for i in range(0,len(longestList)):
+        max_length = max(len(path) for path in self._paths.values())
+        for i in range(0,max_length):
             seen = set()
             for j in range(0, self._k):
                 # make sure the agent has a node at this depth
@@ -247,6 +249,8 @@ class CBS():
             for child in children:
                 child.compute_cost()
                 self.OPEN.append(child)
+            
+            heapq.heapify(self.OPEN)
 
 class AStar():
 
